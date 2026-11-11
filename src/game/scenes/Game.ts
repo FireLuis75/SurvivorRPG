@@ -3,7 +3,8 @@ import { EventBus } from '../EventBus';
 import * as Phaser from 'phaser';
 
 export class Game extends Phaser.Scene {
-    private player!: Phaser.GameObjects.Graphics;
+    private player!: Phaser.GameObjects.Sprite;
+    private playerFacing: 'down' | 'left' | 'right' | 'up' = 'down';
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 
     private wasd!: {
@@ -39,6 +40,13 @@ export class Game extends Phaser.Scene {
 
         const map = this.add.graphics();
 
+        const terrain = this.add.renderTexture(
+            0,
+            0,
+            this.worldWidth,
+            this.worldHeight
+        ).setOrigin(0, 0).setDepth(-1);
+
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < columns; x++) {
                 const verticalPath =
@@ -51,22 +59,58 @@ export class Game extends Phaser.Scene {
 
                 const isPath = verticalPath || horizontalPath;
 
-                const color = isPath
-                    ? (x + y) % 3 === 0
-                        ? 0x9f977a
-                        : 0x888268
-                    : (x * 7 + y * 11) % 5 < 2
-                        ? 0x376b43
-                        : 0x305c3b;
+                const stonePath =
+                    isPath &&
+                    (
+                        y <= 6 ||
+                        (y >= 15 && x >= 20)
+                    );
 
-                map.fillStyle(color);
+                const texture = stonePath
+                    ? (x + y) % 2 === 0
+                        ? 'world-stone-01'
+                        : 'world-stone-02'
+                    : isPath
+                        ? (x + y) % 2 === 0
+                            ? 'world-dirt-01'
+                            : 'world-dirt-02'
+                        : (x * 7 + y * 11) % 5 < 2
+                            ? 'world-grass-02'
+                            : (x + y) % 7 === 0
+                                ? 'world-grass-03'
+                                : 'world-grass-01';
 
-                map.fillRect(
+                terrain.stamp(
+                    texture,
+                    undefined,
                     x * tileSize,
                     y * tileSize,
-                    tileSize,
-                    tileSize
+                    { originX: 0, originY: 0 }
                 );
+
+                if (!isPath) {
+                    const detailSeed = (
+                        ((x + 1) * 73856093) ^
+                        ((y + 1) * 19349663) ^
+                        ((x + 1) * (y + 1) * 83492791)
+                    ) >>> 0;
+
+                    if (detailSeed % 19 === 0) {
+                        const detailTexture = detailSeed % 7 === 0
+                            ? 'world-flowers-01'
+                            : detailSeed % 3 === 0
+                                ? 'world-grass-detail-02'
+                                : 'world-grass-detail-01';
+
+                        terrain.stamp(
+                            detailTexture,
+                            undefined,
+                            x * tileSize,
+                            y * tileSize,
+                            { originX: 0, originY: 0 }
+                        );
+                    }
+                }
 
                 if (
                     !isPath &&
@@ -98,6 +142,8 @@ export class Game extends Phaser.Scene {
             }
         }
 
+        terrain.render();
+
         const trees = [
             [2, 3],
             [5, 4],
@@ -126,17 +172,17 @@ export class Game extends Phaser.Scene {
                 )
             );
 
-            map.fillStyle(0x593c2a);
-            map.fillRect(px + 12, py + 18, 9, 24);
+            const treeTexture = (x + y) % 2 === 0
+                ? 'world-tree-01'
+                : 'world-tree-02';
 
-            map.fillStyle(0x17472c);
-            map.fillRect(px, py + 5, 32, 22);
-
-            map.fillStyle(0x286d3b);
-            map.fillRect(px + 5, py, 23, 20);
-
-            map.fillStyle(0x3c8b4b);
-            map.fillRect(px + 9, py + 4, 10, 8);
+            this.add.image(
+                px - 16,
+                py - 22,
+                treeTexture
+            )
+            .setOrigin(0, 0)
+            .setDepth((py + 42) * 100 / this.worldHeight);
         }
 
         const rocks = [
@@ -159,58 +205,43 @@ export class Game extends Phaser.Scene {
                 )
             );
 
-            map.fillStyle(0x414c4a);
-            map.fillRect(px + 2, py + 10, 29, 19);
+            const rockTexture = x % 3 === 0
+                ? 'world-rock-02'
+                : 'world-rock-01';
 
-            map.fillStyle(0x7b8982);
-            map.fillRect(px + 7, py + 6, 18, 11);
+            this.add.image(
+                px - 4,
+                py + 1,
+                rockTexture
+            )
+            .setOrigin(0, 0)
+            .setDepth((py + 33) * 100 / this.worldHeight);
         }
 
-        map.fillStyle(0x202b30);
-        map.fillRect(448, 43, 128, 88);
+        this.add.image(448, 43, 'world-labyrinth')
+            .setOrigin(0, 0)
+            .setDepth(4);
 
         this.obstacles.push(
-            new Phaser.Geom.Rectangle(
-                448,
-                43,
-                128,
-                88
-            )
+            new Phaser.Geom.Rectangle(454, 55, 116, 82)
         );
 
-        map.fillStyle(0x667475);
-        map.fillRect(456, 51, 112, 20);
 
-        map.fillStyle(0x3b4548);
-        map.fillRect(480, 72, 64, 59);
 
-        map.fillStyle(0x101a20);
-        map.fillRect(493, 86, 38, 45);
 
-        map.fillStyle(0xc0ad77);
-        map.fillRect(474, 131, 76, 7);
 
-        map.fillStyle(0x293a63);
-        map.fillRect(722, 461, 80, 64);
+        this.add.image(722, 450, 'world-altar')
+            .setOrigin(0, 0)
+            .setDepth(4);
 
         this.obstacles.push(
-            new Phaser.Geom.Rectangle(
-                722,
-                461,
-                80,
-                64
-            )
+            new Phaser.Geom.Rectangle(752, 457, 20, 22),
+            new Phaser.Geom.Rectangle(740, 479, 44, 33),
+            new Phaser.Geom.Rectangle(729, 512, 66, 14)
         );
 
-        map.fillStyle(0x5185ca);
-        map.fillRect(730, 469, 64, 48);
 
-        map.fillStyle(0xc4efff);
-        map.fillRect(759, 475, 8, 37);
-        map.fillRect(744, 489, 38, 8);
 
-        map.fillStyle(0xd7b45c);
-        map.fillRect(753, 450, 20, 8);
 
         this.add.text(
             16,
@@ -275,29 +306,39 @@ export class Game extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(1000);
 
-        this.player = this.add.graphics();
+        this.player = this.add.sprite(
+            512,
+            680,
+            'hero-walk',
+            0
+        )
+        .setOrigin(0.5, 0.5)
+        .setDepth((680 + 24) * 100 / this.worldHeight);
 
-        this.player.fillStyle(0x171717);
-        this.player.fillRect(-9, -20, 18, 7);
+        this.playerFacing = 'down';
 
-        this.player.fillStyle(0xe8b68a);
-        this.player.fillRect(-7, -13, 14, 9);
+        const heroDirections = [
+            { name: 'down', start: 0, end: 3 },
+            { name: 'left', start: 4, end: 7 },
+            { name: 'right', start: 8, end: 11 },
+            { name: 'up', start: 12, end: 15 }
+        ];
 
-        this.player.fillStyle(0x252525);
-        this.player.fillRect(-10, -4, 20, 16);
+        for (const heroDirection of heroDirections) {
+            const key = `hero-walk-${heroDirection.name}`;
 
-        this.player.fillStyle(0x404040);
-        this.player.fillRect(-7, 12, 6, 12);
-        this.player.fillRect(2, 12, 6, 12);
-
-        this.player.fillStyle(0xb7c5d0);
-        this.player.fillRect(11, -10, 3, 25);
-
-        this.player.fillStyle(0x6f4c36);
-        this.player.fillRect(9, 9, 7, 5);
-
-        this.player.setPosition(512, 680);
-        this.player.setDepth(10);
+            if (!this.anims.exists(key)) {
+                this.anims.create({
+                    key,
+                    frames: this.anims.generateFrameNumbers('hero-walk', {
+                        start: heroDirection.start,
+                        end: heroDirection.end
+                    }),
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+        }
 
         const keyboard = this.input.keyboard;
 
@@ -594,8 +635,12 @@ export class Game extends Phaser.Scene {
         }
 
         if (direction.lengthSq() === 0) {
+            this.showPlayerIdleFrame();
             return;
         }
+
+        const previousX = this.player.x;
+        const previousY = this.player.y;
 
         const safeDelta = Math.min(
             delta,
@@ -635,6 +680,48 @@ export class Game extends Phaser.Scene {
         ) {
             this.player.y = nextY;
         }
+
+        this.player.setDepth(
+            (this.player.y + 24) * 100 / this.worldHeight
+        );
+
+        const movedX = this.player.x - previousX;
+        const movedY = this.player.y - previousY;
+
+        if (movedX === 0 && movedY === 0) {
+            this.showPlayerIdleFrame();
+            return;
+        }
+
+        if (Math.abs(movedX) > Math.abs(movedY)) {
+            this.playerFacing = movedX < 0 ? 'left' : 'right';
+        } else {
+            this.playerFacing = movedY < 0 ? 'up' : 'down';
+        }
+
+        const animationKey = `hero-walk-${this.playerFacing}`;
+
+        if (
+            !this.player.anims.isPlaying ||
+            this.player.anims.getName() !== animationKey
+        ) {
+            this.player.play(animationKey);
+        }
+    }
+
+    private showPlayerIdleFrame(): void {
+        if (this.player.anims.isPlaying) {
+            this.player.anims.stop();
+        }
+
+        const idleFrames = {
+            down: 0,
+            left: 4,
+            right: 8,
+            up: 12
+        };
+
+        this.player.setFrame(idleFrames[this.playerFacing]);
     }
 
     changeScene() {

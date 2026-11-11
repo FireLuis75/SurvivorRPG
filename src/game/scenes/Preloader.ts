@@ -34,6 +34,34 @@ export class Preloader extends Scene
 
         this.load.image('logo', 'logo.png');
         this.load.image('star', 'star.png');
+
+        this.load.image('world-grass-01', 'world/terrain/grass-01.png');
+        this.load.image('world-grass-02', 'world/terrain/grass-02.png');
+        this.load.image('world-grass-03', 'world/terrain/grass-03.png');
+
+        this.load.image('world-dirt-01', 'world/terrain/dirt-01.png');
+        this.load.image('world-dirt-02', 'world/terrain/dirt-02.png');
+
+        this.load.image('world-stone-01', 'world/terrain/stone-path-01.png');
+        this.load.image('world-stone-02', 'world/terrain/stone-path-02.png');
+
+        this.load.image('world-tree-01', 'world/vegetation/tree-01.png');
+        this.load.image('world-tree-02', 'world/vegetation/tree-02.png');
+
+        this.load.image('world-grass-detail-01', 'world/vegetation/grass-detail-01.png');
+        this.load.image('world-grass-detail-02', 'world/vegetation/grass-detail-02.png');
+        this.load.image('world-flowers-01', 'world/vegetation/flowers-01.png');
+
+        this.load.image('world-rock-01', 'world/obstacles/rock-01.png');
+        this.load.image('world-rock-02', 'world/obstacles/rock-02.png');
+
+        this.load.image('world-labyrinth', 'world/structures/labyrinth-entrance.png');
+        this.load.image('world-altar', 'world/structures/buff-altar.png');
+
+        this.load.spritesheet('hero-walk', 'characters/hero/hero-walk.png', {
+            frameWidth: 32,
+            frameHeight: 48
+        });
     }
 
     create ()
